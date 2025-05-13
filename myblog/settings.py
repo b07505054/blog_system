@@ -1,13 +1,17 @@
 from pathlib import Path
+import os
+import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-SECRET_KEY = '8z#k9p!q2w3e4r5t6y7u8i9o0p-@#$%^&*()'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-DEBUG = True
-ALLOWED_HOSTS = []
 STATIC_URL = '/static/'
-
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')  # Directory to collect static files
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+# Security settings
+SECRET_KEY = os.environ.get('SECRET_KEY', 'your-default-secret-key-for-local-dev')
+DEBUG = os.environ.get('RENDER') != 'true'  # False in production
+ALLOWED_HOSTS = ['*'] if DEBUG else [os.environ.get('RENDER_EXTERNAL_HOSTNAME', '')]
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -22,11 +26,12 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',  # Required for admin (E410)
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # Add this if not already present
+    'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',  # Required for admin (E408)
-    'django.contrib.messages.middleware.MessageMiddleware',  # Required for admin (E409)
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
@@ -49,10 +54,10 @@ TEMPLATES = [
 ]
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': dj_database_url.config(
+        default='sqlite:///db.sqlite3',  
+        conn_max_age=600
+    )
 }
 
 REST_FRAMEWORK = {
